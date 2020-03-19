@@ -2,7 +2,9 @@ package snowflake
 
 import (
 	"bytes"
+	"fmt"
 	"reflect"
+	"sync"
 	"testing"
 )
 
@@ -429,9 +431,22 @@ func BenchmarkGenerate(b *testing.B) {
 	b.ReportAllocs()
 
 	b.ResetTimer()
-	for n := 0; n < b.N; n++ {
-		_ = node.Generate()
+
+	fmt.Println("b.N: ", b.N)
+	sum := 0
+	wg := sync.WaitGroup{}
+	for i := 0; i < 100; i++ {
+		wg.Add(1)
+		go func() {
+			for n := 0; n < b.N; n++ {
+				_ = node.Generate()
+			}
+			sum += b.N
+			wg.Done()
+		}()
 	}
+	wg.Wait()
+	fmt.Println("all: ", sum)
 }
 
 func BenchmarkGenerateMaxSequence(b *testing.B) {

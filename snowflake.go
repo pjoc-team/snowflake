@@ -134,18 +134,21 @@ func NewNode(node int64) (*Node, error) {
 // - Make sure you never have multiple nodes running with the same node ID
 func (n *Node) Generate() ID {
 
-	n.mu.Lock()
-
 	now := time.Since(n.epoch).Nanoseconds() / 1000000
 
 	if now == n.time {
-		n.step = (n.step + 1) & n.stepMask
+		n.mu.Lock()
+		if now == n.time {
+			n.step = (n.step + 1) & n.stepMask
 
-		if n.step == 0 {
-			for now <= n.time {
-				now = time.Since(n.epoch).Nanoseconds() / 1000000
+			if n.step == 0 {
+				for now <= n.time {
+					now = time.Since(n.epoch).Nanoseconds() / 1000000
+				}
 			}
 		}
+
+		n.mu.Unlock()
 	} else {
 		n.step = 0
 	}
@@ -157,7 +160,6 @@ func (n *Node) Generate() ID {
 		(n.step),
 	)
 
-	n.mu.Unlock()
 	return r
 }
 
